@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import initDB from "./config/db";
 import { authRouter } from "./modules/auth/auth.routes";
+import { vehiclesRouter } from "./modules/vehicles/vehicles.routes";
 
 const app = express();
 
@@ -12,6 +13,7 @@ initDB();
 
 // all routers
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/vehicles", vehiclesRouter);
 
 // app home route
 app.get("/", (req: Request, res: Response) => {
