@@ -65,7 +65,7 @@ const getSpecificVehicles = async (vehicleId: string) => {
       `,
       [vehicleId]
     );
-    console.log('vehicleId :>> ', vehicleId);
+    console.log("vehicleId :>> ", vehicleId);
     if (!result.rows[0]) {
       return {
         success: true,
@@ -87,8 +87,63 @@ const getSpecificVehicles = async (vehicleId: string) => {
   }
 };
 
+const updateVehicles = async (
+  vehicleId: string,
+  obj: Record<string, unknown>
+) => {
+  const {
+    vehicle_name,
+    type,
+    registration_number,
+    daily_rent_price,
+    availability_status,
+  } = obj;
+  try {
+    const result = await pool.query(
+      `
+        UPDATE vehicles SET vehicle_name = $1, type = $2, registration_number = $3, daily_rent_price = $4, availability_status = $5 WHERE id = $6 RETURNING *
+      `,
+      [
+        vehicle_name,
+        type,
+        registration_number,
+        daily_rent_price,
+        availability_status,
+        vehicleId,
+      ]
+    );
+    if (result.rowCount === 0) {
+      return {
+        message: "Vehicles not found.",
+        error: true,
+        success: false,
+      };
+    }
+    const vehicles = result.rows[0];
+    return {
+      success: true,
+      message: "Vehicle updated successfully",
+      data: {
+        id: vehicles.id,
+        vehicle_name: vehicles.vehicle_name,
+        type: vehicles.type,
+        registration_number: vehicles.registration_number,
+        daily_rent_price: vehicles.daily_rent_price,
+        availability_status: vehicles.availability_status,
+      },
+    };
+  } catch (error: any) {
+    return {
+      message: error.message,
+      success: false,
+      error: true,
+    };
+  }
+};
+
 export const vehiclesService = {
   postVehicles,
   getAllVehicles,
   getSpecificVehicles,
+  updateVehicles,
 };

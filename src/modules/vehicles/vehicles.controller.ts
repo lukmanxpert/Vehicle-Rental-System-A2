@@ -74,8 +74,50 @@ const getSpecificVehicles = async (req: Request, res: Response) => {
   }
 };
 
+const updateVehicles = async (req: Request, res: Response) => {
+  const vehiclesId = req.params.vehicleId;
+  if (!vehiclesId) {
+    return res.status(400).json({
+      message: "Provide vehicles id.",
+      success: false,
+      error: true,
+    });
+  }
+  const {
+    vehicle_name,
+    type,
+    registration_number,
+    daily_rent_price,
+    availability_status,
+  } = req.body;
+  if (
+    !vehicle_name ||
+    !type ||
+    !registration_number ||
+    !daily_rent_price ||
+    !availability_status
+  ) {
+    return res.status(400).json({
+      message: "Provide required fields.",
+      success: false,
+      error: true,
+    });
+  }
+  try {
+    const result = await vehiclesService.updateVehicles(vehiclesId, req.body);
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+      error: true,
+    });
+  }
+};
+
 export const vehiclesControllers = {
   postVehicles,
   getAllVehicles,
   getSpecificVehicles,
+  updateVehicles,
 };
