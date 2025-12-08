@@ -37,6 +37,13 @@ const postVehicles = async (req: Request, res: Response) => {
 const getAllVehicles = async (req: Request, res: Response) => {
   try {
     const result = await vehiclesService.getAllVehicles();
+    if (!result.rows[0]) {
+      return res.status(200).json({
+        success: true,
+        message: "No vehicles found",
+        data: result.rows,
+      });
+    }
     return res.status(200).json({
       success: true,
       message: "Vehicles retrieved successfully",
@@ -51,7 +58,24 @@ const getAllVehicles = async (req: Request, res: Response) => {
   }
 };
 
+const getSpecificVehicles = async (req: Request, res: Response) => {
+  try {
+    const vehicleId = req.params.vehicleId;
+    const result = await vehiclesService.getSpecificVehicles(
+      vehicleId as string
+    );
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+      error: true,
+      success: false,
+    });
+  }
+};
+
 export const vehiclesControllers = {
   postVehicles,
   getAllVehicles,
+  getSpecificVehicles,
 };

@@ -57,7 +57,38 @@ const getAllVehicles = async () => {
   return result;
 };
 
+const getSpecificVehicles = async (vehicleId: string) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT * FROM vehicles WHERE id = $1
+      `,
+      [vehicleId]
+    );
+    console.log('vehicleId :>> ', vehicleId);
+    if (!result.rows[0]) {
+      return {
+        success: true,
+        message: "No vehicles found",
+        data: result.rows,
+      };
+    }
+    return {
+      success: true,
+      message: "Vehicle retrieved successfully",
+      data: result.rows,
+    };
+  } catch (error: any) {
+    return {
+      message: error.message,
+      error: true,
+      success: false,
+    };
+  }
+};
+
 export const vehiclesService = {
   postVehicles,
   getAllVehicles,
+  getSpecificVehicles,
 };
