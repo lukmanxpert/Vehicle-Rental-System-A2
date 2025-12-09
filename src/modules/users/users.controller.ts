@@ -18,6 +18,14 @@ const getAllUsers = async (req: Request, res: Response) => {
 
 const updateUsers = async (req: Request, res: Response) => {
   const userId = req.params.userId;
+  const { name, email, phone, role } = req.body;
+  if (!name || !email || !phone || !role) {
+    return res.status(400).json({
+      message: "Provide all required fields.",
+      error: true,
+      success: false,
+    });
+  }
   if (!userId) {
     return res.status(400).json({
       message: "User Id not found.",
@@ -35,8 +43,10 @@ const updateUsers = async (req: Request, res: Response) => {
   }
   const decode = jwt.verify(token, config.jwt_secret as string) as JwtPayload;
   req.user = decode;
+  console.log("req.user :>> ", req.user);
   try {
     const result = await usersService.updateUsers(req, userId);
+    return res.json(result);
   } catch (error: any) {
     return res.status(500).json({
       message: error.message,
