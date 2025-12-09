@@ -56,7 +56,29 @@ const updateUsers = async (req: Request, res: Response) => {
   }
 };
 
+const deleteUsers = async (req: Request, res: Response) => {
+  const userId = req.params.userId;
+  if (!userId) {
+    return res.status(400).json({
+      message: "Provide the user Id.",
+      error: true,
+      success: false,
+    });
+  }
+  try {
+    const result = await usersService.deleteUsers(userId);
+    return res.status(result[0] as number).json(result[1]);
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+      error: true,
+      success: false,
+    });
+  }
+};
+
 export const usersController = {
   getAllUsers,
   updateUsers,
+  deleteUsers
 };

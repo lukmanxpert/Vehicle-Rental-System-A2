@@ -89,7 +89,61 @@ const updateUsers = async (req: Request, userId: string) => {
   }
 };
 
+const deleteUsers = async (userId: string) => {
+  try {
+    const bookings = await pool.query(
+      `
+        SELECT * FROM bookings WHERE customer_id = $1
+      `,
+      [userId]
+    );
+    if (bookings.rows.length > 0) {
+      return [
+        400,
+        {
+          message: "User have bookings, can't delete now",
+          error: true,
+          success: false,
+        },
+      ];
+    }
+    const result = await pool.query(
+      `
+      DELETE FROM users WHERE id = $1 
+      `,
+      [userId]
+    );
+    if (result.rowCount === 0) {
+      return [
+        404,
+        {
+          message: "User not found.",
+          success: false,
+          error: true,
+        },
+      ];
+    }
+    return [
+      200,
+      {
+        success: true,
+        message: "User deleted successfully",
+      },
+    ];
+  } catch (error: any) {
+    return [
+      500,
+      {
+        message: error.message,
+        success: false,
+        error: true,
+      },
+    ];
+  }
+};
+
 export const usersService = {
   getAllUsers,
   updateUsers,
+  deleteUsers,
 };
