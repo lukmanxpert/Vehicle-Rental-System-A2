@@ -51,7 +51,9 @@ const updateUsers = async (req: Request, userId: string) => {
       };
     }
     if (req.user.id === user.id || req.user.role === "admin") {
-      pool
+      pool.query(`
+          
+        `);
     }
   } catch (error: any) {
     return {
