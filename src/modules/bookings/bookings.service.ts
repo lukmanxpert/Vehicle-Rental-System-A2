@@ -1,4 +1,3 @@
-import { start } from "repl";
 import { pool } from "../../config/db";
 import { Request } from "express";
 
@@ -117,6 +116,131 @@ const createBookings = async (req: Request) => {
   }
 };
 
+const getBookings = async (customer_id: string, role: string) => {
+  try {
+    let query = "";
+    let values: any[] = [];
+
+    if (role === "customer") {
+      query = `
+        SELECT
+          b.id,
+          b.vehicle_id,
+          b.rent_start_date,
+          b.rent_end_date,
+          b.total_price,
+          b.status,
+
+          v.vehicle_name,
+          v.registration_number,
+          v.type
+
+        FROM bookings b
+        JOIN vehicles v ON b.vehicle_id = v.id
+        WHERE b.customer_id = $1
+        ORDER BY b.id DESC
+      `;
+      values = [customer_id];
+    }
+
+    if (role === "admin") {
+      query = `
+        SELECT
+          b.id,
+          b.customer_id,
+          b.vehicle_id,
+          b.rent_start_date,
+          b.rent_end_date,
+          b.total_price,
+          b.status,
+
+          u.name AS customer_name,
+          u.email AS customer_email,
+
+          v.vehicle_name,
+          v.registration_number
+
+        FROM bookings b
+        JOIN users u ON b.customer_id = u.id
+        JOIN vehicles v ON b.vehicle_id = v.id
+        ORDER BY b.id DESC
+      `;
+    }
+
+    const result = await pool.query(query, values);
+
+    if (result.rowCount === 0) {
+      return [
+        404,
+        {
+          success: true,
+          error: false,
+          message:
+            role === "admin"
+              ? "No bookings found."
+              : "You do not have any bookings.",
+        },
+      ];
+    }
+
+    // 🔹 FORMAT BASED ON ROLE
+    const formattedBookings =
+      role === "admin"
+        ? result.rows.map((row) => ({
+            id: row.id,
+            customer_id: row.customer_id,
+            vehicle_id: row.vehicle_id,
+            rent_start_date: row.rent_start_date,
+            rent_end_date: row.rent_end_date,
+            total_price: row.total_price,
+            status: row.status,
+            customer: {
+              name: row.customer_name,
+              email: row.customer_email,
+            },
+            vehicle: {
+              vehicle_name: row.vehicle_name,
+              registration_number: row.registration_number,
+            },
+          }))
+        : result.rows.map((row) => ({
+            id: row.id,
+            vehicle_id: row.vehicle_id,
+            rent_start_date: row.rent_start_date,
+            rent_end_date: row.rent_end_date,
+            total_price: row.total_price,
+            status: row.status,
+            vehicle: {
+              vehicle_name: row.vehicle_name,
+              registration_number: row.registration_number,
+              type: row.type,
+            },
+          }));
+
+    return [
+      200,
+      {
+        success: true,
+        message:
+          role === "admin"
+            ? "Bookings retrieved successfully"
+            : "Your bookings retrieved successfully",
+        data: formattedBookings,
+      },
+    ];
+  } catch (error: any) {
+    return [
+      500,
+      {
+        message: error.message,
+        error: true,
+        success: false,
+      },
+    ];
+  }
+};
+
 export const bookingsService = {
   createBookings,
+  getBookings,
 };
