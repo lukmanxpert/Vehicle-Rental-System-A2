@@ -26,4 +26,13 @@ app.use("/api/v1/vehicles", vehiclesRouter);
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/bookings", bookingsRouter);
 
+// wrong route
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Page not found.",
+    error: true,
+    success: false,
+  });
+});
+
 export default app;
