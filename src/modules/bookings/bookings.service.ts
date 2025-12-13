@@ -240,7 +240,170 @@ const getBookings = async (customer_id: string, role: string) => {
   }
 };
 
+const updateBookings = async (req: Request) => {
+  const user = req.user as any;
+  const bookingId = req.params.bookingId;
+  const { status } = req.body;
+
+  try {
+    const bookingResult = await pool.query(
+      `
+      SELECT * FROM bookings WHERE id = $1
+      `,
+      [bookingId]
+    );
+
+    if (bookingResult.rowCount === 0) {
+      return [
+        404,
+        {
+          message: "Booking not found",
+          error: true,
+          success: false,
+        },
+      ];
+    }
+
+    const booking = bookingResult.rows[0];
+
+    // CUSTOMER LOGIC
+    if (user.role === "customer") {
+      if (booking.customer_id !== user.id) {
+        return [
+          403,
+          {
+            message: "You are not allowed to update this booking",
+            error: true,
+            success: false,
+          },
+        ];
+      }
+
+      if (status !== "cancelled") {
+        return [
+          400,
+          {
+            message: "Customer can only cancel booking",
+            error: true,
+            success: false,
+          },
+        ];
+      }
+
+      const today = new Date();
+      const startDate = new Date(booking.rent_start_date);
+
+      if (today >= startDate) {
+        return [
+          400,
+          {
+            message: "Booking can only be cancelled before start date",
+            error: true,
+            success: false,
+          },
+        ];
+      }
+
+      const updateResult = await pool.query(
+        `
+        UPDATE bookings
+        SET status = 'cancelled'
+        WHERE id = $1
+        RETURNING *
+        `,
+        [bookingId]
+      );
+
+      await pool.query(
+        `
+        UPDATE vehicles
+        SET availability_status = 'available'
+        WHERE id = $1
+        `,
+        [booking.vehicle_id]
+      );
+
+      return [
+        200,
+        {
+          success: true,
+          message: "Booking cancelled successfully",
+          data: updateResult.rows[0],
+        },
+      ];
+    }
+
+    // ADMIN LOGIC
+    if (user.role === "admin") {
+      if (status !== "returned") {
+        return [
+          400,
+          {
+            message: "Admin can only mark booking as returned",
+            error: true,
+            success: false,
+          },
+        ];
+      }
+
+      const updateResult = await pool.query(
+        `
+        UPDATE bookings
+        SET status = 'returned'
+        WHERE id = $1
+        RETURNING *
+        `,
+        [bookingId]
+      );
+
+      const vehicleResult = await pool.query(
+        `
+        UPDATE vehicles
+        SET availability_status = 'available'
+        WHERE id = $1
+        RETURNING availability_status
+        `,
+        [booking.vehicle_id]
+      );
+
+      return [
+        200,
+        {
+          success: true,
+          message: "Booking marked as returned. Vehicle is now available",
+          data: {
+            ...updateResult.rows[0],
+            vehicle: {
+              availability_status: vehicleResult.rows[0].availability_status,
+            },
+          },
+        },
+      ];
+    }
+
+    // FALLBACK
+    return [
+      403,
+      {
+        message: "Unauthorized role",
+        error: true,
+        success: false,
+      },
+    ];
+  } catch (error: any) {
+    return [
+      500,
+      {
+        message: error.message,
+        error: true,
+        success: false,
+      },
+    ];
+  }
+};
+
 export const bookingsService = {
   createBookings,
   getBookings,
+  updateBookings,
 };

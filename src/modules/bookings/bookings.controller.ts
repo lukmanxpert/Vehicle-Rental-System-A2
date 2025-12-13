@@ -45,7 +45,30 @@ const getBookings = async (req: Request, res: Response) => {
   }
 };
 
+const updateBookings = async (req: Request, res: Response) => {
+  const bookingId = req.params.bookingId;
+  const { status } = req.body;
+  if (!status || !bookingId) {
+    return res.status(400).json({
+      message: "Provide required data.",
+      error: true,
+      success: false,
+    });
+  }
+  try {
+    const updateResult = await bookingsService.updateBookings(req);
+    return res.status(updateResult[0] as number).json(updateResult[1]);
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message,
+      error: true,
+      success: false,
+    });
+  }
+};
+
 export const bookingsController = {
   createBookings,
   getBookings,
+  updateBookings,
 };
